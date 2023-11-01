@@ -1,4 +1,8 @@
 import requests
+import pandas as pd
+from tqdm import tqdm
+tqdm.pandas()
+
 
 MARCA_FANTASY_ENDPOINT = "https://api-fantasy.llt-services.com/api/v3/"
 
@@ -36,7 +40,8 @@ class FantasyAPI:
             "Portero" : "GOA",
             "Defensa" : "DEF",
             "Centrocampista" : "MID",
-            "Delantero" : "STR"
+            "Delantero" : "STR",
+            "Entrenador" : "COA"
         }
 
         status = payload["playerStatus"]
@@ -48,3 +53,10 @@ class FantasyAPI:
         market_value = payload["marketValue"]
 
         return status, name, team, position, points, average_points, market_value
+
+    def get_players(self):
+        player_ids = self.get("player_ids")
+        players_df = pd.DataFrame(player_ids, columns=["id"])
+        players_df[["status", "name", "team", "position", "points", "average_points", "market_value"]] = players_df.id.progress_apply(lambda x: self.get("player_data", player_id=x)).apply(pd.Series)
+
+        return players_df
