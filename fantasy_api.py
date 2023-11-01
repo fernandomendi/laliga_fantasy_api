@@ -27,3 +27,24 @@ class FantasyAPI:
         payload = response.json()
 
         return list(map(lambda x: int(x["id"]), payload))
+
+    def get_player_data(self, player_id):
+        response = requests.get(MARCA_FANTASY_ENDPOINT + f"player/{player_id}", headers=self.headers, timeout=self.request_timeout)
+        payload = response.json()
+
+        positions = {
+            "Portero" : "GOA",
+            "Defensa" : "DEF",
+            "Centrocampista" : "MID",
+            "Delantero" : "STR"
+        }
+
+        status = payload["playerStatus"]
+        name = payload["nickname"]
+        team = payload["team"]["name"]
+        position = positions[payload["position"]]
+        points = list(map(lambda x: x["totalPoints"], payload["playerStats"]))
+        average_points = payload["averagePoints"]
+        market_value = payload["marketValue"]
+
+        return status, name, team, position, points, average_points, market_value
