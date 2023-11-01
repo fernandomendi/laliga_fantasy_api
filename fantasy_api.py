@@ -60,3 +60,12 @@ class FantasyAPI:
         players_df[["status", "name", "team", "position", "points", "average_points", "market_value"]] = players_df.id.progress_apply(lambda x: self.get("player_data", player_id=x)).apply(pd.Series)
 
         return players_df
+
+    def get_squads(self, league_id):
+        response = requests.get(MARCA_FANTASY_ENDPOINT + f"leagues/{league_id}/teams", headers=self.headers, timeout=self.request_timeout)
+        payload = response.json()
+
+        squad_df = pd.DataFrame()
+        for squad in payload:
+            squad_df = pd.concat([squad_df, pd.DataFrame(map(lambda x: (int(x["playerMaster"]["id"]), squad["manager"]["managerName"]), squad["players"]), columns=["player_id", "manager_name"])])
+        return squad_df
