@@ -9,8 +9,8 @@ class FantasyAPI:
         }
         self.request_timeout = 30
 
-    def get(self, path, args):
-        return getattr(self, F"get_{path}")(**args)
+    def get(self, path, **kwargs):
+        return getattr(self, F"get_{path}")(**kwargs)
     
     # ------------------------------------------------------------------------------------
     
@@ -21,3 +21,9 @@ class FantasyAPI:
         for league in payload:
             if league_name == league["name"]:
                 return league["id"]
+
+    def get_player_ids(self):
+        response = requests.get(MARCA_FANTASY_ENDPOINT + "players", headers=self.headers, timeout=self.request_timeout)
+        payload = response.json()
+
+        return list(map(lambda x: int(x["id"]), payload))
