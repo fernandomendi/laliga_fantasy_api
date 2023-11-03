@@ -13,7 +13,7 @@ class FantasyAPI:
         self.request_timeout = 30
 
     def get(self, path, **kwargs):
-        return getattr(self, f"__get_{path}")(**kwargs)
+        return getattr(self, f"_FantasyAPI__get_{path}")(**kwargs)
     
     # ------------------------------------------------------------------------------------
     
@@ -70,7 +70,7 @@ class FantasyAPI:
         return squad_df
 
     def __get_market(self, league_id):
-        response = requests.get(self.endpoint + f"leagues/{league_id}/market", headers=self.headers, timeout=self.request_timeout)
+        response = requests.get(self.endpoint + f"league/{league_id}/market", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
         return list(map(lambda x: int(x["playerMaster"]["id"]), filter(lambda x: x["discr"] == "marketPlayerLeague", payload)))
