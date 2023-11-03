@@ -4,10 +4,9 @@ from tqdm import tqdm
 tqdm.pandas()
 
 
-MARCA_FANTASY_ENDPOINT = "https://api-fantasy.llt-services.com/api/v3/"
-
 class FantasyAPI:
     def __init__(self, token):
+        self.endpoint = "https://api-fantasy.llt-services.com/api/v3/"
         self.headers = {
             'Authorization': f'Bearer {token}'
         }
@@ -19,7 +18,7 @@ class FantasyAPI:
     # ------------------------------------------------------------------------------------
     
     def get_league_id(self, league_name):
-        response = requests.get(MARCA_FANTASY_ENDPOINT + "leagues", headers=self.headers, timeout=self.request_timeout)
+        response = requests.get(self.endpoint + "leagues", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
         for league in payload:
@@ -27,13 +26,13 @@ class FantasyAPI:
                 return league["id"]
 
     def get_player_ids(self):
-        response = requests.get(MARCA_FANTASY_ENDPOINT + "players", headers=self.headers, timeout=self.request_timeout)
+        response = requests.get(self.endpoint + "players", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
         return list(map(lambda x: int(x["id"]), payload))
 
     def get_player_data(self, player_id):
-        response = requests.get(MARCA_FANTASY_ENDPOINT + f"player/{player_id}", headers=self.headers, timeout=self.request_timeout)
+        response = requests.get(self.endpoint + f"player/{player_id}", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
         positions = {
@@ -62,10 +61,24 @@ class FantasyAPI:
         return players_df
 
     def get_squads(self, league_id):
-        response = requests.get(MARCA_FANTASY_ENDPOINT + f"leagues/{league_id}/teams", headers=self.headers, timeout=self.request_timeout)
+        response = requests.get(self.endpoint + f"leagues/{league_id}/teams", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
         squad_df = pd.DataFrame()
         for squad in payload:
             squad_df = pd.concat([squad_df, pd.DataFrame(map(lambda x: (int(x["playerMaster"]["id"]), squad["manager"]["managerName"]), squad["players"]), columns=["player_id", "manager_name"])])
         return squad_df
+
+    def get_market(self, league_id):
+        response = requests.get(self.endpoint + f"leagues/{league_id}/market", headers=self.headers, timeout=self.request_timeout)
+        payload = response.json()
+
+        return list(map(lambda x: int(x["playerMaster"]["id"]), filter(lambda x: x["discr"] == "marketPlayerLeague", payload)))
+
+    def get_league_players(self, league_id):
+        squads_df = self.get("squads", league_id=league_id)
+        market_df = pd.DataFrame(self.get("market", league_id=league_id), columns=["player_id"])
+        market_df["manager_name"] = None
+        league_players_df = pd.concat([squads_df, market_df])
+
+        return league_players_df
