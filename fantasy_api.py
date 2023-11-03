@@ -13,11 +13,11 @@ class FantasyAPI:
         self.request_timeout = 30
 
     def get(self, path, **kwargs):
-        return getattr(self, F"get_{path}")(**kwargs)
+        return getattr(self, f"__get_{path}")(**kwargs)
     
     # ------------------------------------------------------------------------------------
     
-    def get_league_id(self, league_name):
+    def __get_league_id(self, league_name):
         response = requests.get(self.endpoint + "leagues", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
@@ -25,13 +25,13 @@ class FantasyAPI:
             if league_name == league["name"]:
                 return league["id"]
 
-    def get_player_ids(self):
+    def __get_player_ids(self):
         response = requests.get(self.endpoint + "players", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
         return list(map(lambda x: int(x["id"]), payload))
 
-    def get_player_data(self, player_id):
+    def __get_player_data(self, player_id):
         response = requests.get(self.endpoint + f"player/{player_id}", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
@@ -53,14 +53,14 @@ class FantasyAPI:
 
         return status, name, team, position, points, average_points, market_value
 
-    def get_players(self):
+    def __get_players(self):
         player_ids = self.get("player_ids")
         players_df = pd.DataFrame(player_ids, columns=["id"])
         players_df[["status", "name", "team", "position", "points", "average_points", "market_value"]] = players_df.id.progress_apply(lambda x: self.get("player_data", player_id=x)).apply(pd.Series)
 
         return players_df
 
-    def get_squads(self, league_id):
+    def __get_squads(self, league_id):
         response = requests.get(self.endpoint + f"leagues/{league_id}/teams", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
@@ -69,13 +69,13 @@ class FantasyAPI:
             squad_df = pd.concat([squad_df, pd.DataFrame(map(lambda x: (int(x["playerMaster"]["id"]), squad["manager"]["managerName"]), squad["players"]), columns=["player_id", "manager_name"])])
         return squad_df
 
-    def get_market(self, league_id):
+    def __get_market(self, league_id):
         response = requests.get(self.endpoint + f"leagues/{league_id}/market", headers=self.headers, timeout=self.request_timeout)
         payload = response.json()
 
         return list(map(lambda x: int(x["playerMaster"]["id"]), filter(lambda x: x["discr"] == "marketPlayerLeague", payload)))
 
-    def get_league_players(self, league_id):
+    def __get_league_players(self, league_id):
         squads_df = self.get("squads", league_id=league_id)
         market_df = pd.DataFrame(self.get("market", league_id=league_id), columns=["player_id"])
         market_df["manager_name"] = None
